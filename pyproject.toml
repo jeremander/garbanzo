@@ -6,8 +6,13 @@ authors = ["Jeremy Silver <jeremys@nessiness.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
-
+python = ">=3.10"
+beancount = { git = "git@github.com:beancount/beancount.git", branch = "v2" }
+streamlit = "^1.31.0"
+pydantic = "^2.6.1"
+pandas = "^2.2.0"
+streamlit-antd-components = "^0.3.2"
+plotly = "^5.18.0"
 
 [build-system]
 requires = ["poetry-core"]

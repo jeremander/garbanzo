@@ -1,0 +1,43 @@
+- Canonical config file
+    - Validation?
+    - Take some values from ledger itself
+    - Interactive wizard?
+- Sidebar to control date range, filter accounts, etc.
+- Views/reports
+    - Income
+        - Net income per month (bar graph)
+        - Income vs. spending per month (either adjacent or stacked bars)
+    - Spending by category for various time units (line graph)
+    - Monthly spending breakdown
+    - Various treemaps (including expenses as a proportion of disposable income, not just of expenses)
+    - Charity allocations by payee/category
+    - Total subscription amount per year, and averaged per month
+    - Annual end-of-year balances
+- Return calculations over a period, and annualized
+    - Account for cash flows:
+        - TWRR
+        - Dietz
+    - Rank historic/active investments by APY
+- Anomaly detection (how different is a month vs. past months?)
+- Percent changes in time series
+- "At-a-glance" dashboard
+    - Key numbers: gross/disposable/discretionary income, amount saved/spent
+    - Basic pie charts for current month
+    - Significant amounts or percent changes
+- Net worth extrapolation via exponential fit
+- Subscription recurrence
+    - Use comment/event directive to indicate frequency, and/or infer it historically
+    - Show when each subscription is due next, and how much (just equal to previous time)
+    - Identify a subscription based on an account regex (e.g. Expenses:Subscription.*)
+- Budgeting
+    - Fixed expenses
+        - How much am I spending on fixed things like subscriptions per month?
+    - Set reasonable bounds on categories, based on past spending
+    - "Fictitious" accounts for budgets? To allow myself to spend a little more?
+        - See: envelope method
+
+- Plot fixes
+    - Income
+        - Stacked bars:
+            - Configure max number of accounts
+            - Show accounts in decreasing amount order, possibly using a fixed set of N colors per bar

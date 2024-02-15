@@ -44,6 +44,7 @@ lint.ignore = [
     "D413",  # blank line after last section
     "D415",  # first line ending with punctuation
     "E501",  # line length
+    "E731",  # inline lambdas
     "PT001",  # use of pytest.fixture (with no parens)
     "PTH123",  # Path.open instead of regular open
     "RET501",  # return None
@@ -62,7 +63,7 @@ lint.exclude = [
 # ignore unused imports in __init__.py files
 lint.ignore-init-module-imports = true
 
-line-length = 10000
+# line-length = 10000
 
 # where to search for first-party imports
 # src = ["src", "test"]
@@ -86,4 +87,4 @@ force-to-top = ["package.utils"]
 # number of lines after each import block?
 lines-after-imports = 2
 # whether to order imports by type, rather than strictly alphabetically
-order-by-type = false
+order-by-type = true
