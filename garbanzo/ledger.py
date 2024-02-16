@@ -176,6 +176,6 @@ class Ledger:
         if (account_depth is None):
             return df.groupby(grouper)['amount'].sum()
         else:
-            df['account'] = df.account.map(partial(account_at_depth, depth = account_depth))
+            df.loc[:, 'account'] = df.account.map(partial(account_at_depth, depth = account_depth))
             grouped = df.groupby(grouper)
             return grouped.apply(lambda x: x.groupby('account')['amount'].sum())
