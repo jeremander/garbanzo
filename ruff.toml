@@ -2,7 +2,7 @@ target-version = "py310"
 
 # rules to include
 
-lint.select = ["E", "F"]
+lint.select = ["E", "F", "W"]
 
 lint.extend-select = [
     "A",  # builtins
@@ -63,7 +63,7 @@ lint.exclude = [
 # ignore unused imports in __init__.py files
 lint.ignore-init-module-imports = true
 
-# line-length = 10000
+line-length = 320
 
 # where to search for first-party imports
 # src = ["src", "test"]
@@ -88,3 +88,6 @@ force-to-top = ["package.utils"]
 lines-after-imports = 2
 # whether to order imports by type, rather than strictly alphabetically
 order-by-type = true
+
+[format]
+quote-style = "single"
