@@ -11,6 +11,8 @@ import beancount.core.data
 import pandas as pd
 from plotly.colors import qualitative
 
+from garbanzo.config import GarbanzoConfig
+
 
 AnyPath: TypeAlias = str | Path
 LedgerOptions: TypeAlias = dict[str, object]
@@ -118,10 +120,26 @@ class FilterOptions:
 
 @dataclass(frozen = True, repr = False)
 class Ledger:
+    config: GarbanzoConfig
     options: LedgerOptions
     transactions: pd.DataFrame
     postings: pd.DataFrame
     prices: pd.DataFrame
+
+    @staticmethod
+    def make_config(entries: list[beancount.core.data.Custom]) -> GarbanzoConfig:
+        config_dict = {}
+        income_deduction_accounts = []
+        for entry in entries:
+            if entry.type == 'garbanzo-option':
+                [key, val] = entry.values
+                name = key.value.replace('-', '_')
+                if (name == 'income_deduction_account'):
+                    income_deduction_accounts.append(val.value)
+                else:
+                    config_dict[name] = val.value
+        config_dict['income_deduction_accounts'] = income_deduction_accounts
+        return GarbanzoConfig(**config_dict)
 
     @classmethod
     def load(cls, path: AnyPath) -> 'Ledger':
@@ -132,6 +150,7 @@ class Ledger:
         groups = defaultdict(list)
         for entry in entries:
             groups[type(entry)].append(entry)
+        config = cls.make_config(groups[beancount.core.data.Custom])
         txn_rows = []
         posting_rows = []
         for (txn_id, txn) in enumerate(groups[beancount.core.data.Transaction]):
@@ -144,7 +163,7 @@ class Ledger:
         prices = pd.DataFrame(price_rows)
         for df in [transactions, postings, prices]:
             df['date'] = pd.to_datetime(df['date'])
-        return cls(options, transactions, postings, prices)
+        return cls(config, options, transactions, postings, prices)
 
     @property
     def main_currency(self) -> str:
@@ -163,7 +182,7 @@ class Ledger:
         return {cast(str, self.options[f'name_{key}']): color for (key, color) in zip(ACCOUNT_TYPE_NAMES, qualitative.D3)}
 
     def filter(self, filter_options: FilterOptions) -> 'Ledger':
-        return Ledger(self.options, filter_options.filter_dataframe(self.transactions), filter_options.filter_dataframe(self.postings), filter_options.filter_dataframe(self.prices))
+        return Ledger(self.config, self.options, filter_options.filter_dataframe(self.transactions), filter_options.filter_dataframe(self.postings), filter_options.filter_dataframe(self.prices))
 
     def account_flows(self, account_prefix: str, time_grain: TimeGrain, currency: Optional[str] = None, account_depth: Optional[int] = None, adjust_sign: bool = False) -> pd.Series:
         """Calculates the total cash flow for a given account prefix with a given time grain.
@@ -181,19 +200,27 @@ class Ledger:
             df.loc[:, 'account'] = df.account.map(partial(account_at_depth, depth = account_depth))
             grouped = df.groupby(grouper)
             flows = grouped.apply(lambda x: x.groupby('account')['amount'].sum())
-        account_type = account_at_depth(account_prefix, 1)
-        if account_type in [self.account_types[tp] for tp in ['income', 'liabilities']]:
-            flows = -flows
+        if adjust_sign:
+            account_type = account_at_depth(account_prefix, 1)
+            if account_type in [self.account_types[tp] for tp in ['income', 'liabilities']]:
+                flows = -flows
         return flows
 
     def income_expense_data(self, time_grain: TimeGrain, **kwargs: Any) -> pd.DataFrame:
         kw: dict[str, Any] = {**kwargs, 'adjust_sign': True}
         income_account = self.account_types['income']
-        income = self.account_flows(income_account, time_grain, **kw).reset_index()
+        income = self.account_flows(income_account, time_grain, **kw)
+        # income['account'] = income_account
+        disposable = income.copy()
+        for account_prefix in self.config.income_deduction_accounts:
+            disposable -= self.account_flows(account_prefix, time_grain, **kw).reindex(income.index).fillna(0.0)
+        income = income.reset_index()
         income['account'] = income_account
         expense_account = self.account_types['expenses']
         expenses = self.account_flows(expense_account, time_grain, **kw).reset_index()
         expenses['account'] = expense_account
         combined = pd.concat([income, expenses]).pivot(index = 'date', columns = 'account').fillna(0.0).droplevel(level = 0, axis = 1)[[income_account, expense_account]]
+        combined['Disposable'] = disposable
         combined['Savings'] = combined[income_account] - combined[expense_account]
-        return combined
+        cols = combined.columns[[0, 2, 1, 3]]
+        return combined[cols]

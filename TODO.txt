@@ -1,12 +1,10 @@
-- Canonical config file
-    - Validation?
-    - Take some values from ledger itself
-    - Interactive wizard?
+- Configuration
+    - Page to:
+        1) Explain how to configure options in the ledger
+        2) Display all the options and what they do
+            - Include these as field attributes in the GarbanzoConfig class itself
 - Sidebar to control date range, filter accounts, etc.
 - Views/reports
-    - Income
-        - Net income per month (bar graph)
-        - Income vs. spending per month (either adjacent or stacked bars)
     - Spending by category for various time units (line graph)
     - Monthly spending breakdown
     - Various treemaps (including expenses as a proportion of disposable income, not just of expenses)

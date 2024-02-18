@@ -36,7 +36,11 @@ class SidebarOptions:
 
 def setup_sidebar() -> SidebarOptions:
     with st.sidebar:
-        min_date = st.date_input('Start date', value = None, format = 'YYYY-MM-DD')
+        if 'ledger' in st.session_state:
+            default_start_date = st.session_state['ledger'].config.default_start_date
+        else:
+            default_start_date = None
+        min_date = st.date_input('Start date', value = default_start_date, format = 'YYYY-MM-DD')
         max_date = st.date_input('End date', value = None, format = 'YYYY-MM-DD')
         assert (min_date is None) or isinstance(min_date, date)
         assert (max_date is None) or isinstance(max_date, date)
