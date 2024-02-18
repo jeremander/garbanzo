@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum
 from functools import partial
 from pathlib import Path
-from typing import NamedTuple, Optional, Set, TypeAlias, cast
+from typing import Any, NamedTuple, Optional, Set, TypeAlias, cast
 
 from beancount import loader
 import beancount.core.data
@@ -165,17 +165,35 @@ class Ledger:
     def filter(self, filter_options: FilterOptions) -> 'Ledger':
         return Ledger(self.options, filter_options.filter_dataframe(self.transactions), filter_options.filter_dataframe(self.postings), filter_options.filter_dataframe(self.prices))
 
-    def account_flows(self, account_prefix: str, currency: str, time_grain: TimeGrain, account_depth: Optional[int] = None) -> pd.Series:
+    def account_flows(self, account_prefix: str, time_grain: TimeGrain, currency: Optional[str] = None, account_depth: Optional[int] = None, adjust_sign: bool = False) -> pd.Series:
         """Calculates the total cash flow for a given account prefix with a given time grain.
         This is the sum total of transaction amounts within each time period.
         If account_depth is a given integer, additionally groups by the account at the given maximum depth.
-        (E.g. if level is 2, would include as a group the prefix 'Expenses:Restaurants' and the like.)"""
+        (E.g. if level is 2, would include as a group the prefix 'Expenses:Restaurants' and the like.)
+        If adjust_sign = True, negates the sign of income/liability flows to be positive rather than negative."""
+        currency = self.main_currency if (currency is None) else currency
         grouper = pd.Grouper(key = 'date', freq = time_grain.frequency)
         flags = self.postings.account.str.startswith(account_prefix) & (self.postings.currency == currency)
         df = self.postings[flags]
         if (account_depth is None):
-            return df.groupby(grouper)['amount'].sum()
+            flows = df.groupby(grouper)['amount'].sum()
         else:
             df.loc[:, 'account'] = df.account.map(partial(account_at_depth, depth = account_depth))
             grouped = df.groupby(grouper)
-            return grouped.apply(lambda x: x.groupby('account')['amount'].sum())
+            flows = grouped.apply(lambda x: x.groupby('account')['amount'].sum())
+        account_type = account_at_depth(account_prefix, 1)
+        if account_type in [self.account_types[tp] for tp in ['income', 'liabilities']]:
+            flows = -flows
+        return flows
+
+    def income_expense_data(self, time_grain: TimeGrain, **kwargs: Any) -> pd.DataFrame:
+        kw: dict[str, Any] = {**kwargs, 'adjust_sign': True}
+        income_account = self.account_types['income']
+        income = self.account_flows(income_account, time_grain, **kw).reset_index()
+        income['account'] = income_account
+        expense_account = self.account_types['expenses']
+        expenses = self.account_flows(expense_account, time_grain, **kw).reset_index()
+        expenses['account'] = expense_account
+        combined = pd.concat([income, expenses]).pivot(index = 'date', columns = 'account').fillna(0.0).droplevel(level = 0, axis = 1)[[income_account, expense_account]]
+        combined['Savings'] = combined[income_account] - combined[expense_account]
+        return combined
