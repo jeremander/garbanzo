@@ -11,6 +11,7 @@
     - Charity allocations by payee/category
     - Total subscription amount per year, and averaged per month
     - Annual end-of-year balances
+- Deal with currency conversions (expenses in foreign currencies, assets with price)
 - Return calculations over a period, and annualized
     - Account for cash flows:
         - TWRR
